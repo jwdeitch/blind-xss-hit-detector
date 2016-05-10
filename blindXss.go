@@ -5,6 +5,10 @@ import (
 	"time"
 	"net/http"
 	"github.com/emirozer/go-helpers"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ses"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
 type Visitor struct {
@@ -32,6 +36,7 @@ func capture(w http.ResponseWriter, r *http.Request) {
 	logVisit(r)
 	if val, ok := r.URL.Query()["ne"]; ok {
 		if (val[0] == "1") {
+			fmt.Println("No email sent")
 			return
 		}
 	}
@@ -52,6 +57,15 @@ func logVisit(r *http.Request) {
 	fmt.Println(visitor)
 }
 
-func sendEmail() {
+func sendEmail(r *http.Request) {
+	creds := credentials.NewEnvCredentials()
+
+	svc := ses.New(session.New(), &aws.Config{
+		Region: aws.String("us-west-2"),
+		Credentials: creds})
+
+
+	svc.SendEmail(ses.SendEmailInput{
+		"Destination" : ses.Destination{"ToAddresses" : ["test@test.com"]}})
 
 }
