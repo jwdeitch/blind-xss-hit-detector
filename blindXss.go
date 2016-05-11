@@ -1,5 +1,7 @@
 package main
 
+// Detects hits to /hackerone/xss, will log and email hit
+
 import (
 	"fmt"
 	"time"
@@ -9,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ses"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"encoding/json"
 )
 
 type Visitor struct {
@@ -40,11 +43,15 @@ func capture(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	sendEmail()
+	sendEmail(r)
 }
 
 func logVisit(r *http.Request) {
-	visitor := Visit{
+	fmt.Println(getVisitor(r))
+}
+
+func getVisitor(r *http.Request) Visit {
+	return Visit{
 		Visitor: Visitor{
 			RemoteAddr:r.RemoteAddr,
 			ForwardedFor:r.Header.Get("X-FORWARDED-FOR"),
@@ -54,7 +61,6 @@ func logVisit(r *http.Request) {
 		RequestedResource: r.URL.Path,
 		Method: r.Method,
 	}
-	fmt.Println(visitor)
 }
 
 func sendEmail(r *http.Request) {
@@ -64,8 +70,18 @@ func sendEmail(r *http.Request) {
 		Region: aws.String("us-west-2"),
 		Credentials: creds})
 
+	rawRequest, _ := json.Marshal(getVisitor(r))
+	msgBody := "XSS triggered from: " + r.Referer() + "\r\n \r\n \r\n " + string(rawRequest)
 
-	svc.SendEmail(ses.SendEmailInput{
-		"Destination" : ses.Destination{"ToAddresses" : ["test@test.com"]}})
-
+	svc.SendEmail(&ses.SendEmailInput{
+		Destination : &ses.Destination{
+			ToAddresses : []*string{
+				aws.String("test@test.com")}},
+		Message : &ses.Message{Body: &ses.Body{// Required
+			Text: &ses.Content{
+				Data: aws.String(msgBody), // Required
+			},
+		}, },
+		Source : aws.String("xss@r.ps")})
+	fmt.Println("email sent")
 }
