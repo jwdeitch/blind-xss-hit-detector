@@ -45,7 +45,23 @@ func capture(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	sendEmail(r)
+
+	// Let's start a timer of 10 minutes once the first request comes in
+	var requestBuffer []*http.Request
+
+	if len(requestBuffer) == 0 {
+		timer := time.NewTimer(time.Minute * 10)
+	}
+
+	<-timer.C
+	append(requestBuffer, r)
+	for _, req := range requestBuffer {
+		sendEmail(req)
+	}
+}
+
+func buildReqBuffer([]*http.Request, *time.Timer) {
+
 }
 
 func logVisit(r *http.Request) {
