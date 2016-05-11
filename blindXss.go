@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"encoding/json"
+	"os"
 )
 
 type Visitor struct {
@@ -71,17 +72,35 @@ func sendEmail(r *http.Request) {
 		Credentials: creds})
 
 	rawRequest, _ := json.Marshal(getVisitor(r))
-	msgBody := "XSS triggered from: " + r.Referer() + "\r\n \r\n \r\n " + string(rawRequest)
 
-	svc.SendEmail(&ses.SendEmailInput{
+	var referer string
+	if len(r.Referer()) > 0 {
+		referer = r.Referer()
+	} else {
+		referer = "N/A"
+	}
+
+	msgBody := "XSS triggered from: " + referer + "\r\n \r\n \r\n " + string(rawRequest)
+
+	_, sendErr := svc.SendEmail(&ses.SendEmailInput{
 		Destination : &ses.Destination{
 			ToAddresses : []*string{
-				aws.String("test@test.com")}},
-		Message : &ses.Message{Body: &ses.Body{// Required
+				aws.String(os.Getenv("XSS_CONTACT_EMAIL"))}},
+		Message : &ses.Message{Body: &ses.Body{
 			Text: &ses.Content{
-				Data: aws.String(msgBody), // Required
+				Data: aws.String(msgBody),
 			},
-		}, },
-		Source : aws.String("xss@r.ps")})
-	fmt.Println("email sent")
+		},
+			Subject: &ses.Content{
+				Data: aws.String("Blind XSS triggered"),
+			},
+		},
+		Source : aws.String(os.Getenv("XSS_CONTACT_EMAIL"))})
+
+	if sendErr != nil {
+		fmt.Println("email failed to send: " + sendErr.Error())
+		return
+	}
+
+	fmt.Println("email sent successfully")
 }
