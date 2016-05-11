@@ -25,6 +25,7 @@ type Visitor struct {
 type Visit struct {
 	Visitor           Visitor
 	RequestedResource string
+	Referer           string
 	Method            string
 }
 
@@ -60,6 +61,7 @@ func getVisitor(r *http.Request) Visit {
 			UserAgent:r.UserAgent(),
 		},
 		RequestedResource: r.URL.Path,
+		Referer: r.Referer(),
 		Method: r.Method,
 	}
 }
@@ -71,7 +73,7 @@ func sendEmail(r *http.Request) {
 		Region: aws.String("us-west-2"),
 		Credentials: creds})
 
-	rawRequest, _ := json.Marshal(getVisitor(r))
+	rawRequest, _ := json.MarshalIndent(getVisitor(r), "", "	")
 
 	var referer string
 	if len(r.Referer()) > 0 {
