@@ -51,16 +51,14 @@ func capture(w http.ResponseWriter, r *http.Request) {
 
 	if len(requestBuffer) == 0 {
 		timer := time.NewTimer(time.Minute * 10)
-		go batchSendoff(requestBuffer, timer)
+		go batchSendoff(&requestBuffer, timer)
 	}
 
 	append(requestBuffer, r)
-	for _, req := range requestBuffer {
-		sendEmail(req)
-	}
+
 }
 
-func batchSendoff(requestBuffer []*http.Request, timer *time.Timer) {
+func batchSendoff(requestBuffer *[]*http.Request, timer *time.Timer) {
 	<-timer.C
 	buildEmailBody(requestBuffer)
 }
@@ -83,12 +81,13 @@ func getVisitor(r *http.Request) Visit {
 	}
 }
 
-func buildEmailBody(requestBuffer []*http.Request) {
+func buildEmailBody(requestBuffer *[]*http.Request) {
 	var finalBody string
-	for _, req := range requestBuffer {
-		finalBody = finalBody + json.MarshalIndent(getVisitor(req), "", "	") + "\r\n"
+	for _, req := range *requestBuffer {
+		jsonSerializedBody, _ := json.MarshalIndent(getVisitor(req), "", "	")
+		finalBody = finalBody + string(jsonSerializedBody) + "\r\n"
 	}
-	return sendEmail(finalBody)
+	sendEmail(finalBody)
 }
 
 func sendEmail(body string) {
