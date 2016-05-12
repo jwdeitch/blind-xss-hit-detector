@@ -51,17 +51,18 @@ func capture(w http.ResponseWriter, r *http.Request) {
 
 	if len(requestBuffer) == 0 {
 		timer := time.NewTimer(time.Minute * 10)
+		go batchSendoff(requestBuffer, timer)
 	}
 
-	<-timer.C
 	append(requestBuffer, r)
 	for _, req := range requestBuffer {
 		sendEmail(req)
 	}
 }
 
-func buildReqBuffer([]*http.Request, *time.Timer) {
-
+func batchSendoff(requestBuffer []*http.Request, timer *time.Timer) {
+	<-timer.C
+	buildEmailBody(requestBuffer)
 }
 
 func logVisit(r *http.Request) {
@@ -82,23 +83,20 @@ func getVisitor(r *http.Request) Visit {
 	}
 }
 
-func sendEmail(r *http.Request) {
+func buildEmailBody(requestBuffer []*http.Request) {
+	var finalBody string
+	for _, req := range requestBuffer {
+		finalBody = finalBody + json.MarshalIndent(getVisitor(req), "", "	") + "\r\n"
+	}
+	return sendEmail(finalBody)
+}
+
+func sendEmail(body string) {
 	creds := credentials.NewEnvCredentials()
 
 	svc := ses.New(session.New(), &aws.Config{
 		Region: aws.String("us-west-2"),
 		Credentials: creds})
-
-	rawRequest, _ := json.MarshalIndent(getVisitor(r), "", "	")
-
-	var referer string
-	if len(r.Referer()) > 0 {
-		referer = r.Referer()
-	} else {
-		referer = "N/A"
-	}
-
-	msgBody := "XSS triggered from: " + referer + "\r\n \r\n \r\n " + string(rawRequest)
 
 	_, sendErr := svc.SendEmail(&ses.SendEmailInput{
 		Destination : &ses.Destination{
@@ -106,7 +104,7 @@ func sendEmail(r *http.Request) {
 				aws.String(os.Getenv("XSS_CONTACT_EMAIL"))}},
 		Message : &ses.Message{Body: &ses.Body{
 			Text: &ses.Content{
-				Data: aws.String(msgBody),
+				Data: aws.String(body),
 			},
 		},
 			Subject: &ses.Content{
