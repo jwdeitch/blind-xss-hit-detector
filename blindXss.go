@@ -36,6 +36,8 @@ func main() {
 	helpers.Check(err)
 }
 
+var requestBuffer []*http.Request
+
 func capture(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "This page is intended to detect blind XSS vulnerabilities in the spirit of your organizations bug bounty program.")
 	logVisit(r)
@@ -46,15 +48,12 @@ func capture(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Let's start a timer of 10 minutes once the first request comes in
-	var requestBuffer []*http.Request
-
 	if len(requestBuffer) == 0 {
-		timer := time.NewTimer(time.Minute * 10)
+		timer := time.NewTimer(time.Minute/4)
 		go batchSendoff(&requestBuffer, timer)
 	}
 
-	append(requestBuffer, r)
+	requestBuffer = append(requestBuffer, r)
 
 }
 
