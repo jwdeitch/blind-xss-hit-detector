@@ -36,8 +36,10 @@ func main() {
 	helpers.Check(err)
 }
 
+// This slice will be built up to store the requests in 10 minute intervals
 var requestBuffer []*http.Request
 
+// A query param of ne (no email) set to 1 will not add the request to the requestBuffer.
 func capture(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "This page is intended to detect blind XSS vulnerabilities in the spirit of your organizations bug bounty program.")
 	logVisit(r)
@@ -57,15 +59,18 @@ func capture(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// This will block until timer channel sends
 func batchSendoff(requestBuffer *[]*http.Request, timer *time.Timer) {
 	<-timer.C
 	buildEmailBody(requestBuffer)
 }
 
+// Write all visits to stdout
 func logVisit(r *http.Request) {
 	fmt.Println(getVisitor(r))
 }
 
+// creates new visit structure
 func getVisitor(r *http.Request) Visit {
 	return Visit{
 		Visitor: Visitor{
@@ -80,6 +85,7 @@ func getVisitor(r *http.Request) Visit {
 	}
 }
 
+// Iterate over the request slice to build email body
 func buildEmailBody(requestBuffer *[]*http.Request) {
 	var finalBody string
 	for _, req := range *requestBuffer {
@@ -89,6 +95,7 @@ func buildEmailBody(requestBuffer *[]*http.Request) {
 	sendEmail(finalBody)
 }
 
+// Send email from provided body string
 func sendEmail(body string) {
 	creds := credentials.NewEnvCredentials()
 
