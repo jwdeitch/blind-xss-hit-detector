@@ -31,7 +31,7 @@ type Visit struct {
 
 func main() {
 	fmt.Println("We're up and running")
-	http.HandleFunc("/hackerone/xss", capture)
+	http.HandleFunc("/s", capture)
 	err := http.ListenAndServe(":9090", nil)
 	helpers.Check(err)
 }
