@@ -1,6 +1,6 @@
 package main
 
-// Detects hits to /hackerone/xss, will log and email hit
+// Detects hits to /s, will log and email hit
 
 import (
 	"fmt"
