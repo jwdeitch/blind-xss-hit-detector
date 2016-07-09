@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 	"net/http"
-	"github.com/emirozer/go-helpers"
+	"github.com/inturn/go-helpers"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ses"
 	"github.com/aws/aws-sdk-go/aws/session"
