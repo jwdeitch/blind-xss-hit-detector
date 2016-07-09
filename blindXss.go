@@ -51,7 +51,7 @@ func capture(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(requestBuffer) == 0 {
-		timer := time.NewTimer(time.Minute/4)
+		timer := time.NewTimer(time.Hour/4)
 		go batchSendoff(&requestBuffer, timer)
 	}
 
@@ -122,6 +122,8 @@ func sendEmail(body string) {
 		fmt.Println("email failed to send: " + sendErr.Error())
 		return
 	}
+
+	requestBuffer = requestBuffer[:0]
 
 	fmt.Println("email sent successfully")
 }
